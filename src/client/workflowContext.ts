@@ -97,6 +97,13 @@ export type WorkflowCtx = {
       validator?: Validator<T, any, any>;
     },
   ): Promise<T>;
+
+  /**
+   * Get the current history of the workflow execution.
+   *
+   * @returns The size in bytes and number of steps processed so far.
+   */
+  getHistory: () => { size: number; stepCount: number };
 };
 
 export type OptionalRestArgs<
@@ -110,9 +117,11 @@ export type OptionalRestArgs<
 export function createWorkflowCtx(
   workflowId: WorkflowId,
   sender: BaseChannel<StepRequest>,
+  getHistory: () => { size: number; stepCount: number },
 ) {
   return {
     workflowId,
+    getHistory,
     runQuery: async (query, args, opts?) => {
       return runFunction(sender, "query", query, args, opts);
     },
