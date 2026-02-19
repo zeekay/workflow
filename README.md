@@ -664,9 +664,10 @@ Here are a few limitations to keep in mind:
 - The workflow body is internally a mutation, with each step's return value read
   from the database on each subsequent step. As a result, the limits for a
   mutation apply and limit the number and size of steps you can perform
-  (including the workflow state overhead). There is currently an 8MiB limit
-  imposed on the journal size, to stay well within the mutation bounds. See more
-  about mutation limits here:
+  (including the workflow state overhead). **There is currently an 8MiB limit
+  imposed on the journal size**, to stay well within the mutation bounds. See
+  tip below for monitoring the journal size and step count during execution. See
+  more about mutation limits here:
   https://docs.convex.dev/production/state/limits#transactions
 - We currently do not collect backtraces from within function calls from
   workflows.
@@ -679,5 +680,26 @@ Here are a few limitations to keep in mind:
   implementation should stay stable for the lifetime of active workflows. See
   [this issue](https://github.com/get-convex/workflow/issues/35) for ideas on
   how to make this better.
+
+**Tip:** Use `ctx.getHistory()` to get the current journal size and step count.
+This is useful for workflows that poll in a loop, so you can bail out before
+hitting the limit.
+
+```ts
+while (true) {
+  const result = await ctx.runAction(
+    internal.example.pollForResult,
+    { id },
+    { runAfter: 1000 }, // Poll every second
+  );
+  if (result !== null) {
+    return result;
+  }
+  const { stepCount, size } = ctx.getHistory();
+  if (stepCount > 100 || size > 2_000_000) {
+    return null;
+  }
+}
+```
 
 <!-- END: Include on https://convex.dev/components -->
